@@ -1,0 +1,70 @@
+# Checkout, copy to s3, deploy to beanstalk
+
+name: CI-CD-Pipeline-to-AWS-S3
+env:
+  S3_BUCKET_NAME: "S3-bucket"
+  APPLICATION_NAME: "MyJavaApp"
+  ENVIRONMENT_NAME: "MyJavaApp-env"
+  DEPLOY_PACKAGE_NAME: "Java_App_${{ github.sha }}.zip"
+  AWS_REGION_NAME: "us-east-1"
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  CI_Part:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Git clone our repo
+        uses: actions/checkout@v3
+      # Dont include .git containing folder like gitignore
+      - name: Create ZIP deployment package
+        run: zip -r $ {{ env.DEPLOY_PACKAGE_NAME }} ./ -x *.git*
+
+      # Runs a set of commands using the runners shell
+      - name: Configure my AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with: 
+          aws-access-key-id: ${{ secrets.MY_AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.MY_AWS_SECRET_KEY }}
+          aws-region: ${{ env.AWS_REGION_NAME }}
+      - name: Copy Deployment Package to S3 bucket
+        run: aws s3 cp ${{ env.DEPLOY_PACKAGE_NAME }} s3://${{ env.S3_BUCKET_NAME }}/
+      - name: Print happy message for CI finish
+        run: echo "CI Pipeline finished successfully!"
+  CD_Part:
+    runs-on: ubuntu-latest
+    needs: [CI_Part]
+    steps:
+      # Runs a set of commands using the runners shell
+    - name: Configure my AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with: 
+        aws-access-key-id: ${{ secrets.MY_AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.MY_AWS_SECRET_KEY }}
+        aws-region: ${{ env.AWS_REGION_NAME }}
+    - name: Create new Elastic BeanStalk Application
+      run: |
+        aws elasticbeanstalk create-application-version \
+        -- application-name ${{ env.APPLICATION_NAME }} \
+        --source-bundle S3Bucket="${{ env.S3_BUCKET_NAME }}", S3Key="${{ env.DEPLOY_PACKAGE_NAME }}" \
+        --version-label "Ver-${{ github.sha }}"
+        --desription "CommitSHA-${{ github.sha }}"
+    - name: Deploy new Elastic BeanStalk Application Version
+      run: aws elasticbeanstalk update-environment --environment-name ${{ env.ENVIRONMENT_NAME }} --version-label "Ver-${{ github.sha }}"
+    - name: Print happy message for CD finish
+      run: echo "CD Pipeline finished successfully!"
