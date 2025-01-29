@@ -1,15 +1,22 @@
-name: Java Multiple JDKs Example
+name: Java CI
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  test:
+  build:
+
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up multiple JDKs
+        id: setup-jdks
         uses: actions/setup-java@v4
         with:
           distribution: 'corretto'
@@ -19,14 +26,14 @@ jobs:
 
       - name: Some java work that requires JAVA 21
         env:
-          JAVA_HOME: ${{ env.JAVA_HOME_21_x64 }}
+          JAVA_HOME: ${{ steps.setup-jdks.outputs.JAVA_HOME_21_x64 }}
         run: |
-          echo "Using JAVA_HOME: $JAVA_HOME"
+          echo "Using Java version:"
           java -version
 
       - name: Some java work that requires JAVA 11
         env:
-          JAVA_HOME: ${{ env.JAVA_HOME_11_x64 }}
+          JAVA_HOME: ${{ steps.setup-jdks.outputs.JAVA_HOME_11_x64 }}
         run: |
-          echo "Using JAVA_HOME: $JAVA_HOME"
+          echo "Using Java version:"
           java -version
