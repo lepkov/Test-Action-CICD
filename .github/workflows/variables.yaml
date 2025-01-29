@@ -27,21 +27,18 @@ jobs:
       - name: Print all outputs from setup-jdks
         run: echo "${{ toJSON(steps.setup-jdks.outputs) }}"
 
-      - name: Display Environment Variables
-        run: |
-          echo "JAVA_HOME_21_X64: $JAVA_HOME_21_X64"
-          echo "JAVA_HOME_11_X64: $JAVA_HOME_11_X64"
+      - name: Set JAVA_HOME for Java 21
+        run: echo "JAVA_HOME=${{ steps.setup-jdks.outputs.JAVA_HOME_21_x64 }}" >> $GITHUB_ENV
 
       - name: Some java work that requires JAVA 21
-        env:
-          JAVA_HOME: ${{ steps.setup-jdks.outputs.JAVA_HOME_21_x64 }}
         run: |
           echo "Using Java version:"
           java -version
 
+      - name: Set JAVA_HOME for Java 11
+        run: echo "JAVA_HOME=${{ steps.setup-jdks.outputs.JAVA_HOME_11_x64 }}" >> $GITHUB_ENV
+
       - name: Some java work that requires JAVA 11
-        env:
-          JAVA_HOME: ${{ steps.setup-jdks.outputs.JAVA_HOME_11_x64 }}
         run: |
           echo "Using Java version:"
           java -version
