@@ -24,6 +24,11 @@ jobs:
             21
             11
 
+      - name: Display Environment Variables
+        run: |
+          echo "JAVA_HOME_21_x64: $JAVA_HOME_21_x64"
+          echo "JAVA_HOME_11_x64: $JAVA_HOME_11_x64"
+
       - name: Some java work that requires JAVA 21
         env:
           JAVA_HOME: ${{ steps.setup-jdks.outputs.JAVA_HOME_21_x64 }}
